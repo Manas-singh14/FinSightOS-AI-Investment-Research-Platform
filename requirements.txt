@@ -1,0 +1,50 @@
+# Core
+fastapi
+uvicorn
+streamlit
+python-dotenv
+pydantic
+
+# LLM + Agents
+langchain
+langgraph
+langchain-groq
+langchain-community
+groq
+huggingface-hub
+
+# RAG
+qdrant-client
+sentence-transformers
+cohere
+
+# MCP
+mcp
+
+# Database
+asyncpg
+psycopg2-binary
+redis
+
+# Indian Market Data
+yfinance                  # works for NSE/BSE with .NS/.BO suffix
+nsepy                     # NSE specific data
+jugaad-data               # Indian stock data
+pandas-datareader         # RBI macro data
+feedparser                # Economic Times RSS news
+beautifulsoup4            # scraping MoneyControl
+requests                  # HTTP calls to BSE/NSE APIs
+lxml                      # XML/HTML parsing
+
+# ML
+xgboost
+scikit-learn
+pandas
+numpy
+
+# Observability
+langsmith
+
+# Utilities
+python-dateutil
+aiohttp                   # async HTTP calls
