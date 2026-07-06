@@ -1,12 +1,17 @@
 import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
+from groq import Groq
+import json
 import streamlit as st
 import requests
 from datetime import date
+from dotenv import load_dotenv
+load_dotenv()
 
 API_URL = "http://localhost:8000"
+groq_client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+
 
 st.set_page_config(
     page_title="FinSightOS",
@@ -76,9 +81,233 @@ st.sidebar.markdown("## 📈 FinSightOS")
 st.sidebar.markdown("*AI Investment Research Platform*")
 st.sidebar.markdown("---")
 
+
+groq_client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+
+def get_chat_response(user_message: str) -> str:
+    """
+    Intelligently routes user message to right tool.
+    
+    If user asks to analyze a stock → calls /analyze API
+    If user asks about portfolio → calls /portfolio API
+    If user asks about market → calls /market API
+    Otherwise → uses Groq for general financial Q&A
+    """
+    msg_lower = user_message.lower()
+
+    # detect analyze intent
+    analyze_keywords = [
+        "analyze", "analysis", "should i buy",
+        "should i invest", "buy or sell", "verdict on",
+        "what do you think about", "tell me about stock"
+    ]
+
+    # detect portfolio intent
+    portfolio_keywords = [
+        "portfolio", "my holdings", "my stocks",
+        "my investments", "p&l", "profit", "loss"
+    ]
+
+    # detect market intent
+    market_keywords = [
+        "nifty", "sensex", "market", "sector",
+        "it sector", "banking sector"
+    ]
+
+    # detect macro intent
+    macro_keywords = [
+        "rbi", "repo rate", "inflation", "gdp",
+        "rupee", "fii", "dii", "macro"
+    ]
+
+    # check if user mentioned a stock symbol
+    # common NSE symbols to detect
+    common_symbols = [
+        "TCS", "INFY", "WIPRO", "HCLTECH", "TECHM",
+        "HDFCBANK", "ICICIBANK", "SBIN", "KOTAKBANK", "AXISBANK",
+        "RELIANCE", "ONGC", "IOC", "BPCL",
+        "MARUTI", "TATAMOTORS", "BAJAJ-AUTO", "M&M",
+        "BAJFINANCE", "BAJAJFINSV",
+        "HINDUNILVR", "ITC", "NESTLEIND",
+        "ETERNAL", "DMART", "ADANIENT"
+    ]
+
+    mentioned_symbol = None
+    for symbol in common_symbols:
+        if symbol.lower() in msg_lower or symbol in user_message.upper():
+            mentioned_symbol = symbol
+            break
+
+    # route to analyze if stock mentioned + analyze intent
+    if mentioned_symbol and any(
+        kw in msg_lower for kw in analyze_keywords + [
+            "analyze", "buy", "sell", "invest",
+            "worth", "good", "bad", "opinion"
+        ]
+    ):
+        # determine sector
+        sector_map = {
+            "TCS": "IT", "INFY": "IT", "WIPRO": "IT",
+            "HCLTECH": "IT", "TECHM": "IT",
+            "HDFCBANK": "Banking", "ICICIBANK": "Banking",
+            "SBIN": "Banking", "KOTAKBANK": "Banking",
+            "RELIANCE": "Energy", "ONGC": "Energy",
+            "MARUTI": "Auto", "TATAMOTORS": "Auto",
+            "BAJFINANCE": "NBFC",
+        }
+        sector = sector_map.get(mentioned_symbol, "Others")
+
+        response_text = f"Running full AI analysis for **{mentioned_symbol}**... this takes ~20 seconds.\n\n"
+
+        result = api_post("/analyze", {
+            "symbol": mentioned_symbol,
+            "sector": sector
+        })
+
+        if result.get("success"):
+            report = result["data"]
+            strategy = report.get("investment_strategy", {})
+
+            response_text += (
+                f"## {report.get('verdict_emoji')} {report.get('final_verdict')}\n"
+                f"**Score:** {report.get('overall_score')}/10\n\n"
+                f"**{report.get('executive_summary')}**\n\n"
+                f"### Investment Strategy\n"
+                f"- Target Price: ₹{strategy.get('target_price')}\n"
+                f"- Entry Price: ₹{strategy.get('entry_price')}\n"
+                f"- Stop Loss: ₹{strategy.get('stop_loss')}\n"
+                f"- Time Horizon: {strategy.get('time_horizon')}\n\n"
+                f"### Key Catalysts\n"
+            )
+            for c in report.get("key_catalysts", []):
+                response_text += f"✅ {c}\n"
+
+            response_text += "\n### Risks to Watch\n"
+            for r in report.get("key_risks_to_watch", []):
+                response_text += f"⚠️ {r}\n"
+
+            response_text += (
+                f"\n*Want detailed analysis? "
+                f"Go to Stock Analysis page and enter {mentioned_symbol}*"
+            )
+        else:
+            response_text += "Analysis failed. Please try the Stock Analysis page directly."
+
+        return response_text
+
+    # route to portfolio
+    elif any(kw in msg_lower for kw in portfolio_keywords):
+        result = api_get("/portfolio")
+        if result.get("success"):
+            data = result["data"]
+            summary = data.get("portfolio_summary", {})
+            holdings = data.get("holdings", [])
+
+            response = (
+                f"## 💼 Your Portfolio\n\n"
+                f"**Total Invested:** ₹{summary.get('total_invested_inr', 0):,.0f}\n"
+                f"**Current Value:** ₹{summary.get('current_value_inr', 0):,.0f}\n"
+                f"**P&L:** ₹{summary.get('total_pnl_inr', 0):,.0f} "
+                f"({summary.get('total_pnl_pct', 0)}%)\n"
+                f"**Status:** {summary.get('overall_status')}\n\n"
+                f"### Holdings\n"
+            )
+            for h in holdings:
+                emoji = "▲" if h['pnl_pct'] >= 0 else "▼"
+                response += (
+                    f"- **{h['symbol']}**: ₹{h['current_price']} "
+                    f"{emoji} {h['pnl_pct']}%\n"
+                )
+            return response
+        return "Couldn't fetch portfolio. Make sure Docker is running."
+
+    # route to market overview
+    elif any(kw in msg_lower for kw in market_keywords):
+        nifty = api_get("/market/nifty")
+        sectors = api_get("/market/sectors")
+
+        response = "## 📊 Market Overview\n\n"
+
+        if nifty.get("success"):
+            d = nifty["data"]
+            response += (
+                f"**Nifty 50:** {d.get('current_level'):,.0f} "
+                f"({d.get('day_change_pct')}% today)\n"
+                f"1-year return: {d.get('returns', {}).get('1_year_pct')}%\n\n"
+            )
+
+        if sectors.get("success"):
+            response += "### Sector Performance (1 Month)\n"
+            for name, data in sectors["data"].items():
+                ret = data.get("1_month_return_pct", 0)
+                emoji = "▲" if ret >= 0 else "▼"
+                response += f"- **{name}**: {emoji} {ret}%\n"
+
+        return response
+
+    # route to macro
+    elif any(kw in msg_lower for kw in macro_keywords):
+        macro = api_get("/macro/summary")
+        if macro.get("success"):
+            snapshot = macro["data"].get("macro_snapshot", {})
+            indicators = snapshot.get("indicators", {})
+            rbi = indicators.get("rbi_policy", {})
+            currency = indicators.get("currency", {})
+
+            return (
+                f"## 🌍 Macro Environment\n\n"
+                f"**Overall:** {snapshot.get('overall_assessment')}\n\n"
+                f"**RBI Repo Rate:** {rbi.get('repo_rate_pct')}% "
+                f"({rbi.get('trend')} cycle)\n"
+                f"**USD/INR:** ₹{currency.get('usdinr')} "
+                f"({currency.get('direction')})\n"
+                f"**Positive signals:** {snapshot.get('positive_signals')}\n"
+            )
+        return "Couldn't fetch macro data."
+
+    # general financial Q&A using Groq
+    else:
+        # build conversation history for context
+        messages = [
+            {
+                "role": "system",
+                "content": (
+                    "You are FinSightOS, an AI investment research assistant "
+                    "specializing in Indian stock markets (NSE/BSE). "
+                    "You have access to live market data, financial analysis tools, "
+                    "and a knowledge base of financial concepts. "
+                    "Be concise, helpful, and always remind users this is not "
+                    "financial advice."
+                )
+            }
+        ]
+
+        # add last 5 messages for context
+        for msg in st.session_state.messages[-5:]:
+            messages.append({
+                "role": msg["role"],
+                "content": msg["content"]
+            })
+
+        # add current message
+        messages.append({
+            "role": "user",
+            "content": user_message
+        })
+
+        response = groq_client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=messages,
+            temperature=0.3,
+            max_tokens=500
+        )
+
+        return response.choices[0].message.content
+    
+
 page = st.sidebar.radio(
     "Navigate",
-    ["🔍 Stock Analysis", "💼 My Portfolio", "🌍 Market Overview"]
+    ["🔍 Stock Analysis", "💼 My Portfolio", "🌍 Market Overview","💬 Chat with FinSightOS"]
 )
 
 st.sidebar.markdown("---")
@@ -449,3 +678,59 @@ elif page == "🌍 Market Overview":
                     st.success(f"**{name}**\n▲ {ret}%")
                 else:
                     st.error(f"**{name}**\n▼ {ret}%")
+
+elif page == "💬 Chat with FinSightOS":
+    st.markdown(
+        '<div class="main-header">💬 Chat with FinSightOS</div>',
+        unsafe_allow_html=True
+    )
+    st.markdown("---")
+
+    # initialize chat history in session state
+    # session_state persists across reruns in Streamlit
+    if "messages" not in st.session_state:
+        st.session_state.messages = [
+            {
+                "role": "assistant",
+                "content": (
+                    "Hi! I'm FinSightOS, your AI investment research assistant. "
+                    "Ask me anything about Indian stocks.\n\n"
+                    "Try:\n"
+                    "- 'Analyze TCS'\n"
+                    "- 'What is the current Nifty level?'\n"
+                    "- 'How is the IT sector performing?'\n"
+                    "- 'Should I buy RELIANCE?'\n"
+                    "- 'What is my portfolio status?'"
+                )
+            }
+        ]
+
+    # display chat history
+    for message in st.session_state.messages:
+        with st.chat_message(message["role"]):
+            st.markdown(message["content"])
+
+    # chat input
+    if prompt := st.chat_input("Ask about any Indian stock..."):
+
+        # add user message to history
+        st.session_state.messages.append({
+            "role": "user",
+            "content": prompt
+        })
+
+        # display user message
+        with st.chat_message("user"):
+            st.markdown(prompt)
+
+        # generate response
+        with st.chat_message("assistant"):
+            with st.spinner("Thinking..."):
+                response = get_chat_response(prompt)
+            st.markdown(response)
+
+        # add assistant response to history
+        st.session_state.messages.append({
+            "role": "assistant",
+            "content": response
+        })                    
