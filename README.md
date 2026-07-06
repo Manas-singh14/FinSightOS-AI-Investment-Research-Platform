@@ -15,7 +15,7 @@ Powered by 7 specialized AI agents, 6 MCP servers, and a fine-tuned financial LL
 
 ---
 
-## 🎯 What It Does
+## 🎯 What It Does (Project still in development)
 
 A user types: *"Should I increase my position in TCS given current market conditions?"*
 
