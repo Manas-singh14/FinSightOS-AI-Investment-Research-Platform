@@ -28,6 +28,7 @@ from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 from groq import Groq
 from mcp.server.fastmcp import FastMCP
+import yfinance as yf
 
 load_dotenv()
 
@@ -263,6 +264,20 @@ def fetch_nse_announcements(symbol: str) -> list:
     return []
 
 
+def get_company_query(symbol: str) -> str:
+    # fetch real company name from yfinance
+    # works for all 1800+ NSE stocks automatically
+    try:
+        ticker = yf.Ticker(f"{symbol.upper()}.NS")
+        name = ticker.info.get("longName", "")
+        if name:
+            return f"{name} NSE stock India"
+        else:
+            return f"{symbol} NSE stock India"
+    except:
+        return f"{symbol} NSE stock India"
+    
+
 @mcp.tool()
 def get_stock_news(symbol: str, max_articles: int = 10) -> str:
     """
@@ -278,28 +293,7 @@ def get_stock_news(symbol: str, max_articles: int = 10) -> str:
     Args:
         symbol: NSE stock symbol e.g. TCS, RELIANCE, INFY
     """
-    company_queries = {
-        "TCS": "Tata Consultancy Services TCS NSE stock",
-        "RELIANCE": "Reliance Industries NSE stock India",
-        "INFY": "Infosys NSE stock India results",
-        "HDFCBANK": "HDFC Bank NSE stock India",
-        "ICICIBANK": "ICICI Bank NSE stock India",
-        "WIPRO": "Wipro NSE stock India results",
-        "BAJFINANCE": "Bajaj Finance NSE stock India",
-        "SBIN": "State Bank India SBI NSE stock",
-        "AXISBANK": "Axis Bank NSE stock India",
-        "KOTAKBANK": "Kotak Mahindra Bank NSE stock",
-        "HCLTECH": "HCL Technologies NSE stock India",
-        "TATAMOTORS": "Tata Motors NSE stock India",
-        "MARUTI": "Maruti Suzuki NSE stock India",
-        "HINDUNILVR": "Hindustan Unilever NSE stock",
-        "ADANIENT": "Adani Enterprises NSE stock India",
-    }
-
-    query = company_queries.get(
-        symbol.upper(),
-        f"{symbol} NSE stock India"
-    )
+    query = get_company_query(symbol)
 
     # Fetch articles
     articles = fetch_google_news(query, max_items=max_articles)

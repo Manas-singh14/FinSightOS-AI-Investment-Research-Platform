@@ -1,0 +1,29 @@
+TOPIC: Price to Earnings Ratio (P/E)
+The P/E ratio measures how much investors pay for each rupee of company earnings. A high P/E suggests investors expect strong future growth, while a low P/E may indicate undervaluation or poor growth prospects. Compare P/E within the same sector since different industries have different normal ranges. IT sector typically trades 15-25x, FMCG often trades 40-60x due to stable predictable growth.
+
+TOPIC: Return on Equity (ROE)
+ROE measures how efficiently a company generates profit from shareholder money. ROE above 20% is generally considered excellent. ROE above 15% is good. Below 10% suggests inefficient capital use. However, very high ROE can also indicate high debt (leverage) inflating the ratio, so always check debt-to-equity alongside ROE.
+
+TOPIC: Beta and Volatility
+Beta measures how much a stock moves relative to the overall market (Nifty 50). Beta of 1.0 means the stock moves exactly with the market. Beta above 1.5 indicates high volatility, suitable for aggressive investors with high risk tolerance. Beta below 0.8 indicates defensive stocks, suitable for conservative investors seeking stability.
+
+TOPIC: Sharpe Ratio
+The Sharpe ratio measures risk-adjusted returns - how much return you got for the risk taken. Above 2.0 is excellent. Above 1.0 is good. Negative Sharpe ratio means the investment underperformed even the risk-free rate (like a fixed deposit), meaning you took risk for negative reward. Always compare Sharpe ratios across similar time periods.
+
+TOPIC: DCF Valuation
+Discounted Cash Flow valuation estimates a company's intrinsic value by projecting future cash flows and discounting them to present value using a required rate of return. The margin of safety (difference between intrinsic value and market price) of 20-30% is what value investors like Warren Buffett look for before investing. DCF is highly sensitive to growth rate and discount rate assumptions - small changes can significantly alter the valuation.
+
+TOPIC: FII and DII Flows
+Foreign Institutional Investors (FII) and Domestic Institutional Investors (DII) are the largest participants in Indian markets. FII flows are influenced by global risk appetite, US interest rates, and currency movements. DII flows (mutual funds, insurance companies) tend to be more stable and often counter FII selling during market corrections, providing support to the market.
+
+TOPIC: RBI Repo Rate
+The repo rate is the interest rate at which RBI lends to commercial banks. Rate cuts reduce borrowing costs across the economy, typically boosting sectors like banking, real estate, and auto. Rate hikes are used to control inflation but can slow economic growth. RBI's Monetary Policy Committee meets six times a year to review and set this rate.
+
+TOPIC: Promoter Holding and Pledging
+High promoter holding (above 50%) generally signals confidence from company founders. However, promoter share pledging (using shares as loan collateral) is a red flag - if the stock price falls significantly, lenders can force-sell pledged shares, creating a downward spiral. Always check pledge percentage alongside holding percentage.
+
+TOPIC: Margin of Safety
+Margin of safety is the difference between a stock's intrinsic value and its current market price, expressed as a percentage. Value investors require a significant margin of safety (typically 20-30%) before investing, to protect against valuation errors and unforeseen risks. The larger the margin, the more room for error in your analysis.
+
+TOPIC: Sector Rotation
+Sector rotation refers to money moving between different sectors based on economic cycles. During rate cut cycles, banking, real estate, and auto tend to outperform. During inflationary periods, energy and commodities often outperform. Defensive sectors like FMCG and pharma tend to hold up better during market downturns.

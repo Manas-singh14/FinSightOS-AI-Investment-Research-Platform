@@ -111,24 +111,70 @@
 #     print(f"Content preview: {content[:300]}")
 #     print("-"*50)
 
-import sys
-sys.path.append('.')
-import json
+# import sys
+# sys.path.append('.')
+# import json
 
-from mcp_servers.news_server import fetch_google_news
+# from mcp_servers.news_server import fetch_google_news
 
-articles = fetch_google_news("Tata Consultancy Services TCS NSE stock", max_items=10)
+# articles = fetch_google_news("Tata Consultancy Services TCS NSE stock", max_items=10)
 
-print(f"Total articles: {len(articles)}")
-print("\nChecking TCS relevance:")
-print("="*50)
+# print(f"Total articles: {len(articles)}")
+# print("\nChecking TCS relevance:")
+# print("="*50)
 
-for i, article in enumerate(articles):
-    title = article['title']
+# for i, article in enumerate(articles):
+#     title = article['title']
     
-    # Check if TCS is actually mentioned
-    tcs_mentioned = any(kw in title.lower() for kw in 
-                       ['tcs', 'tata consultancy'])
+#     # Check if TCS is actually mentioned
+#     tcs_mentioned = any(kw in title.lower() for kw in 
+#                        ['tcs', 'tata consultancy'])
     
-    print(f"\n{i+1}. {title}")
-    print(f"   TCS mentioned: {'✅ Yes' if tcs_mentioned else '❌ No — general article'}")
+#     print(f"\n{i+1}. {title}")
+#     print(f"   TCS mentioned: {'✅ Yes' if tcs_mentioned else '❌ No — general article'}")
+
+# import sys
+# sys.path.append('.')
+# import json
+
+# from mcp_servers.news_server import get_company_query, get_stock_news
+
+# # Test 1 — check what query gets generated for different symbols
+# print("Testing query generation:")
+# print("="*50)
+
+# symbols = ["TCS", "ETERNAL", "MUTHOOTFIN", "DMART", "PAYTM"]
+
+# for symbol in symbols:
+#     query = get_company_query(symbol)
+#     print(f"{symbol:15} → {query}")
+
+# # Test 2 — fetch actual news for ETERNAL
+# print("\nTesting news fetch for TCS:")
+# result = json.loads(get_stock_news("TCS", max_articles=3))
+# print(f"Articles found: {result['news_articles']['count']}")
+# print(f"Overall sentiment: {result['overall_sentiment']['sentiment']}")
+# if result['news_articles']['articles']:
+#     for a in result['news_articles']['articles'][:2]:
+#         print(f"\nTitle: {a['title']}")
+#         print(f"Sentiment: {a['sentiment_analysis']['sentiment']}")
+
+from sentence_transformers import SentenceTransformer
+from qdrant_client import QdrantClient
+
+model = SentenceTransformer('all-MiniLM-L6-v2')
+client = QdrantClient(url="http://localhost:6333")
+
+query = "What does negative Sharpe ratio mean for an investment?"
+query_vector = model.encode(query).tolist()
+
+results = client.query_points(
+    collection_name="financial_concepts",
+    query=query_vector,
+    limit=2
+)
+
+for r in results.points:
+    print(f"Score: {r.score:.3f}")
+    print(f"Text: {r.payload['text'][:200]}")
+    print()

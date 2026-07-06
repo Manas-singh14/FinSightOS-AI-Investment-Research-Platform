@@ -8,3 +8,4 @@ data/filings/
 *.bin
 *.safetensors
 logs/
+test.py
